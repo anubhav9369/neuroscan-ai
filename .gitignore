@@ -1,0 +1,5 @@
+# IMPORTANT: config.js contains your API key — never upload this
+config.js
+.env
+*.env
+config.js
