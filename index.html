@@ -587,7 +587,13 @@
 <div class="toast" id="toast"></div>
 
 <!-- Load config FIRST (contains API key, hidden from UI) -->
-<script src="config.js"></script>
+<script>
+const CONFIG = {
+  GEMINI_API_KEY: "AIzaSyCkTY0Xdn5l-X5G1gDq_BNeo1S9XzkyTfg",
+  MODEL: "gemini-2.5-flash",
+};
+</script>
+
 
 <script>
 // ── State ──────────────────────────────────────────────────────
@@ -604,7 +610,7 @@ let apiReady     = false;
   const label = document.getElementById('configLabel');
   const banner= document.getElementById('configBanner');
 
-  if (typeof CONFIG === 'undefined' || !CONFIG.GEMINI_API_KEY || CONFIG.GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
+  if (typeof CONFIG === 'undefined' || !CONFIG.GEMINI_API_KEY || CONFIG.GEMINI_API_KEY === 'AIzaSyCkTY0Xdn5l-X5G1gDq_BNeo1S9XzkyTfg') {
     dot.className   = 'config-dot error';
     label.textContent = 'Config missing';
     banner.classList.add('visible');
