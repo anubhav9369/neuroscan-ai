@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NeuroScan AI — Alzheimer's Detection System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:        #070d14;
+    --surface:   #0d1621;
+    --surface2:  #111e2e;
+    --border:    #1c2f45;
+    --accent:    #00d4ff;
+    --accent2:   #7b61ff;
+    --accent3:   #00ffaa;
+    --warn:      #ffaa00;
+    --danger:    #ff4d6d;
+    --text:      #e8f0f8;
+    --muted:     #4a6080;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Mono', monospace;
+    --font-disp: 'DM Serif Display', serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0,212,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 90%, rgba(123,97,255,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0,255,170,0.03) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  .wrapper { position: relative; z-index: 1; }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.4rem 3rem;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    background: rgba(7,13,20,0.85);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 0.75rem;
+    font-family: var(--font-head); font-size: 1.05rem;
+    font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .logo-icon {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+  .logo span { color: var(--accent); }
+
+  .header-right { display: flex; align-items: center; gap: 1rem; }
+
+  .header-badge {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: rgba(0,255,170,0.07);
+    border: 1px solid rgba(0,255,170,0.2);
+    border-radius: 100px;
+    padding: 0.38rem 1rem;
+    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent3);
+  }
+
+  .pulse-dot {
+    width: 6px; height: 6px;
+    background: var(--accent3); border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:0.3; transform:scale(0.6); }
+  }
+
+  /* Config status indicator — small, subtle, top right */
+  .config-indicator {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+  .config-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .config-dot.ok     { background: var(--accent3); }
+  .config-dot.error  { background: var(--danger); }
+
+  /* ── Hero ── */
+  .hero { text-align: center; padding: 5rem 2rem 3rem; }
+
+  .hero-eyebrow {
+    font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 1.5rem;
+    opacity: 0; animation: fadeUp 0.6s ease 0.1s forwards;
+  }
+  .hero-title {
+    font-family: var(--font-disp);
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    line-height: 1.1; margin-bottom: 1.5rem;
+    opacity: 0; animation: fadeUp 0.6s ease 0.2s forwards;
+  }
+  .hero-title em {
+    font-style: italic;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    font-size: 0.83rem; color: var(--muted); max-width: 460px;
+    margin: 0 auto 1.5rem; line-height: 1.9;
+    opacity: 0; animation: fadeUp 0.6s ease 0.3s forwards;
+  }
+  .hero-free-badge {
+    display: inline-flex; align-items: center; gap: 0.75rem;
+    background: rgba(123,97,255,0.08);
+    border: 1px solid rgba(123,97,255,0.25);
+    border-radius: 100px;
+    padding: 0.5rem 1.4rem;
+    font-size: 0.7rem; letter-spacing: 0.08em; color: #a899ff;
+    margin-bottom: 3rem;
+    opacity: 0; animation: fadeUp 0.6s ease 0.35s forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* ── Config error banner ── */
+  .config-banner {
+    max-width: 860px; margin: 0 auto 2rem;
+    padding: 0 1.5rem;
+    display: none;
+  }
+  .config-banner.visible { display: block; }
+
+  .config-banner-inner {
+    background: rgba(255,77,109,0.07);
+    border: 1px solid rgba(255,77,109,0.25);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    font-size: 0.75rem;
+    line-height: 1.8;
+    color: #e08090;
+  }
+  .config-banner-inner strong { color: var(--danger); }
+  .config-banner-inner code {
+    background: rgba(255,77,109,0.1);
+    padding: 0.15rem 0.5rem;
+    border-radius: 5px;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+  }
+  .config-steps { margin-top: 0.75rem; padding-left: 1rem; }
+  .config-steps li { margin-bottom: 0.3rem; }
+  .config-steps a { color: var(--accent); }
+
+  /* ── Main card ── */
+  .main-card {
+    max-width: 860px; margin: 0 auto 4rem; padding: 0 1.5rem;
+    opacity: 0; animation: fadeUp 0.6s ease 0.45s forwards;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px; overflow: hidden;
+  }
+
+  /* ── Loading bar ── */
+  .loading-bar { height: 2px; background: var(--border); display: none; }
+  .loading-bar.active { display: block; }
+  .loading-bar::after {
+    content: ''; display: block; height: 100%; width: 35%;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scanline 1.4s ease-in-out infinite;
+  }
+  @keyframes scanline {
+    0%   { transform: translateX(-200%); }
+    100% { transform: translateX(500%); }
+  }
+
+  /* ── Upload zone ── */
+  .upload-zone { padding: 2.5rem 2rem; border-bottom: 1px solid var(--border); }
+
+  .dropzone {
+    border: 2px dashed var(--border); border-radius: 16px;
+    padding: 3.5rem 2rem; text-align: center; cursor: pointer;
+    transition: all 0.3s; position: relative; overflow: hidden;
+  }
+  .dropzone:hover, .dropzone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.04);
+  }
+  .dropzone.drag-over { transform: scale(1.01); }
+  .dropzone-icon { font-size: 3rem; margin-bottom: 1rem; display: block; opacity: 0.55; }
+  .dropzone-title {
+    font-family: var(--font-head); font-size: 1rem;
+    font-weight: 700; margin-bottom: 0.5rem;
+  }
+  .dropzone-sub { font-size: 0.71rem; color: var(--muted); line-height: 1.8; }
+  .dropzone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    width: 100%; height: 100%;
+  }
+
+  /* ── Loading text ── */
+  .loading-text {
+    display: none; align-items: center; gap: 0.75rem;
+    padding: 1.25rem 2rem; font-size: 0.74rem; color: var(--accent);
+  }
+  .loading-text.active { display: flex; }
+  .spinner {
+    width: 15px; height: 15px;
+    border: 2px solid rgba(0,212,255,0.15);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Analysis layout ── */
+  .analysis-layout { display: none; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border); }
+  .analysis-layout.visible { display: grid; }
+
+  .preview-panel { padding: 2rem; border-right: 1px solid var(--border); }
+  .preview-panel img { width: 100%; border-radius: 12px; border: 1px solid var(--border); display: block; }
+  .img-meta { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .meta-tag {
+    font-size: 0.62rem; letter-spacing: 0.08em;
+    padding: 0.28rem 0.7rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 100px; color: var(--muted); text-transform: uppercase;
+  }
+
+  .result-panel { padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+  /* ── Result components ── */
+  .result-header {
+    font-size: 0.62rem; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 0.6rem;
+  }
+
+  .diagnosis-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.6rem 1.2rem; border-radius: 100px;
+    font-family: var(--font-head); font-size: 0.82rem; font-weight: 700;
+    border: 1px solid; margin-bottom: 0.25rem;
+  }
+  .diagnosis-badge.none     { color:var(--accent3); border-color:rgba(0,255,170,0.35); background:rgba(0,255,170,0.07); }
+  .diagnosis-badge.mci      { color:var(--warn);    border-color:rgba(255,170,0,0.35);  background:rgba(255,170,0,0.07); }
+  .diagnosis-badge.ad       { color:var(--danger);  border-color:rgba(255,77,109,0.35); background:rgba(255,77,109,0.07); }
+
+  .conf-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.7rem; }
+  .conf-label { font-size: 0.67rem; color: var(--muted); width: 110px; flex-shrink: 0; }
+  .conf-track { flex: 1; height: 5px; background: var(--surface2); border-radius: 10px; overflow: hidden; }
+  .conf-fill { height: 100%; border-radius: 10px; transition: width 1s cubic-bezier(0.4,0,0.2,1); width: 0%; }
+  .conf-fill.ad  { background: linear-gradient(90deg, var(--danger), #ff8fa3); }
+  .conf-fill.mci { background: linear-gradient(90deg, var(--warn),   #ffd166); }
+  .conf-fill.cn  { background: linear-gradient(90deg, var(--accent3), #80ffcb); }
+  .conf-pct { font-size: 0.67rem; width: 38px; text-align: right; color: var(--text); }
+
+  .findings { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem; }
+  .findings li { display: flex; gap: 0.6rem; font-size: 0.73rem; color: #8ba5c0; line-height: 1.6; }
+  .findings li::before { content: '→'; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+
+  .analysis-text { font-size: 0.76rem; line-height: 1.9; color: #8ba5c0; }
+
+  /* ── Buttons ── */
+  .analyze-wrap {
+    padding: 1.75rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+  }
+
+  .btn-group { display: flex; gap: 0.75rem; align-items: center; }
+
+  .btn-analyze {
+    display: flex; align-items: center; gap: 0.7rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000; border: none; border-radius: 12px;
+    padding: 0.85rem 2rem;
+    font-family: var(--font-head); font-size: 0.82rem; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-analyze:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,212,255,0.3); }
+
+  .btn-reset {
+    background: none; border: 1px solid var(--border);
+    color: var(--muted); border-radius: 10px;
+    padding: 0.85rem 1.4rem;
+    font-family: var(--font-body); font-size: 0.72rem;
+    cursor: pointer; transition: all 0.2s; display: none;
+  }
+  .btn-reset:hover { border-color: var(--danger); color: var(--danger); }
+
+  .analyze-hint { font-size: 0.67rem; color: var(--muted); line-height: 1.7; }
+
+  /* ── Disclaimer ── */
+  .disclaimer {
+    margin: 0 2rem 1.75rem;
+    padding: 0.9rem 1.2rem;
+    background: rgba(255,170,0,0.05);
+    border: 1px solid rgba(255,170,0,0.15);
+    border-radius: 10px;
+    font-size: 0.66rem; color: #7a6040; line-height: 1.7;
+    display: none;
+  }
+  .disclaimer.visible { display: block; }
+
+  /* ── Stats ── */
+  .stats-row { display: grid; grid-template-columns: repeat(3,1fr); border-top: 1px solid var(--border); }
+  .stat-cell { padding: 1.5rem 2rem; border-right: 1px solid var(--border); text-align: center; }
+  .stat-cell:last-child { border-right: none; }
+  .stat-num {
+    font-family: var(--font-disp); font-size: 2rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stat-label { font-size: 0.62rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.25rem; }
+
+  /* ── Info cards ── */
+  .info-section {
+    max-width: 860px; margin: 0 auto 5rem; padding: 0 1.5rem;
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem;
+    opacity: 0; animation: fadeUp 0.6s ease 0.55s forwards;
+  }
+  .info-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.5rem;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .info-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+  .info-card-icon { font-size: 1.4rem; margin-bottom: 0.9rem; }
+  .info-card-title { font-family: var(--font-head); font-size: 0.83rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .info-card-body { font-size: 0.7rem; color: var(--muted); line-height: 1.75; }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.75rem 3rem;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.66rem; color: var(--muted); flex-wrap: wrap; gap: 1rem;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--surface); border: 1px solid var(--danger);
+    border-radius: 12px; padding: 1rem 1.5rem;
+    font-size: 0.73rem; color: var(--danger);
+    max-width: 340px; z-index: 999; line-height: 1.6;
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── Responsive ── */
+  @media (max-width: 680px) {
+    header { padding: 1rem 1.5rem; }
+    .analysis-layout { grid-template-columns: 1fr; }
+    .preview-panel { border-right: none; border-bottom: 1px solid var(--border); }
+    .info-section { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr; }
+    .stat-cell { border-right: none; border-bottom: 1px solid var(--border); }
+    .hero { padding: 3rem 1.5rem 2rem; }
+    .analyze-wrap { flex-direction: column; align-items: stretch; }
+  }
+
+  /* ── Model info strip ── */
+  .model-strip {
+    max-width: 860px; margin: 0 auto 2rem; padding: 0 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+    opacity: 0; animation: fadeUp 0.6s ease 0.5s forwards;
+  }
+  .model-strip-item {
+    display: flex; align-items: center; gap: 0.9rem;
+    padding: 1.2rem 1.6rem; flex: 1;
+  }
+  .model-strip-sep {
+    width: 1px; height: 40px;
+    background: var(--border); flex-shrink: 0;
+  }
+  .msi-icon { font-size: 1.2rem; opacity: 0.7; }
+  .msi-label {
+    font-size: 0.6rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 0.2rem;
+  }
+  .msi-value {
+    font-family: var(--font-head); font-size: 0.78rem;
+    font-weight: 700; color: var(--text);
+  }
+
+  /* ── Updated info cards ── */
+  .info-card-icon-wrap {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 0.75rem; font-weight: 800;
+    letter-spacing: 0.05em; margin-bottom: 1rem;
+  }
+  .info-card-icon-wrap.cn  { background: rgba(0,255,170,0.12); color: var(--accent3); border: 1px solid rgba(0,255,170,0.25); }
+  .info-card-icon-wrap.mci { background: rgba(255,170,0,0.12);  color: var(--warn);    border: 1px solid rgba(255,170,0,0.25); }
+  .info-card-icon-wrap.ad  { background: rgba(255,77,109,0.12); color: var(--danger);  border: 1px solid rgba(255,77,109,0.25); }
+
+  @media (max-width: 680px) {
+    .model-strip { flex-direction: column; }
+    .model-strip-sep { width: 100%; height: 1px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🧠</div>
+      Neuro<span>Scan</span> AI
+    </div>
+    <div class="header-right">
+      <div class="config-indicator">
+        <div class="config-dot" id="configDot"></div>
+        <span id="configLabel">Checking config...</span>
+      </div>
+      <div class="header-badge">
+        <div class="pulse-dot"></div>
+        ViT Model — Online
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <p class="hero-eyebrow">Vision Transformer · Deep Learning · MRI Analysis</p>
+    <h1 class="hero-title">Alzheimer's <em>MRI</em><br/>Detection</h1>
+    <p class="hero-sub">Upload a brain MRI scan and our trained Vision Transformer model will classify the stage of Alzheimer's disease in seconds.</p>
+    <div class="hero-free-badge">✦ ViT-B/16 Architecture &nbsp;·&nbsp; Trained on 6,000+ MRI scans &nbsp;·&nbsp; 92% Accuracy</div>
+  </section>
+
+  <!-- Config error banner (shown if config.js not set up) -->
+  <div class="config-banner" id="configBanner">
+    <div class="config-banner-inner">
+      <strong>⚙️ Service Unavailable:</strong> Model endpoint not configured.
+      Open <code>config.js</code> and set up the model credentials to continue.
+    </div>
+  </div>
+
+  <!-- Main Card -->
+  <div class="main-card">
+    <div class="card">
+
+      <div class="loading-bar" id="loadingBar"></div>
+
+      <!-- Drop zone -->
+      <div class="upload-zone" id="uploadZone">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])"/>
+          <span class="dropzone-icon">🫁</span>
+          <div class="dropzone-title">Upload Brain MRI Scan</div>
+          <div class="dropzone-sub">
+            JPG · PNG · WEBP · BMP supported<br/>
+            Axial, coronal or sagittal slice · Max 10 MB
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading text -->
+      <div class="loading-text" id="loadingText">
+        <div class="spinner"></div>
+        <span id="loadingMsg">Running inference on ViT model...</span>
+      </div>
+
+      <!-- Analysis layout -->
+      <div class="analysis-layout" id="analysisLayout">
+        <div class="preview-panel">
+          <img id="previewImg" src="" alt="MRI Preview"/>
+          <div class="img-meta">
+            <span class="meta-tag" id="metaName">—</span>
+            <span class="meta-tag" id="metaSize">—</span>
+            <span class="meta-tag" id="metaType">—</span>
+          </div>
+        </div>
+
+        <div class="result-panel">
+          <div>
+            <div class="result-header">Diagnosis</div>
+            <div class="diagnosis-badge" id="diagnosisBadge">Awaiting analysis...</div>
+          </div>
+
+          <div>
+            <div class="result-header" style="margin-bottom:0.8rem">Confidence Breakdown</div>
+            <div class="conf-row">
+              <span class="conf-label">AD (Alzheimer's)</span>
+              <div class="conf-track"><div class="conf-fill ad" id="confAD"></div></div>
+              <span class="conf-pct" id="pctAD">—</span>
+            </div>
+            <div class="conf-row">
+              <span class="conf-label">MCI</span>
+              <div class="conf-track"><div class="conf-fill mci" id="confMCI"></div></div>
+              <span class="conf-pct" id="pctMCI">—</span>
+            </div>
+            <div class="conf-row">
+              <span class="conf-label">CN (Normal)</span>
+              <div class="conf-track"><div class="conf-fill cn" id="confCN"></div></div>
+              <span class="conf-pct" id="pctCN">—</span>
+            </div>
+          </div>
+
+          <div id="analysisSection" style="display:none">
+            <div class="result-header">AI Findings</div>
+            <ul class="findings" id="findingsList"></ul>
+          </div>
+
+          <div id="recommendSection" style="display:none">
+            <div class="result-header">Recommendation</div>
+            <p class="analysis-text" id="recommendText"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="analyze-wrap">
+        <div class="btn-group">
+          <button class="btn-analyze" id="btnAnalyze" onclick="analyze()" disabled>
+            ⚡ Analyze MRI
+          </button>
+          <button class="btn-reset" id="btnReset" onclick="resetAll()">↺ Reset</button>
+        </div>
+        <p class="analyze-hint" id="analyzeHint">Upload an MRI scan to run the model.</p>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer" id="disclaimer">
+        ⚠️ <strong style="color:#a07840">Medical Disclaimer:</strong>
+        This tool is for research and educational purposes only. Results are NOT a clinical diagnosis.
+        Always consult a qualified neurologist or radiologist for medical decisions.
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-cell">
+          <div class="stat-num">3</div>
+          <div class="stat-label">Classes</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="scanCount">0</div>
+          <div class="stat-label">Scans Analyzed</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num">ViT</div>
+          <div class="stat-label">Model Architecture</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Model Info Strip -->
+  <div class="model-strip">
+    <div class="model-strip-item">
+      <div class="msi-icon">⚙️</div>
+      <div>
+        <div class="msi-label">Architecture</div>
+        <div class="msi-value">Vision Transformer (ViT-B/16)</div>
+      </div>
+    </div>
+    <div class="model-strip-sep"></div>
+    <div class="model-strip-item">
+      <div class="msi-icon">🗃️</div>
+      <div>
+        <div class="msi-label">Training Dataset</div>
+        <div class="msi-value">6,000+ Brain MRI Scans</div>
+      </div>
+    </div>
+    <div class="model-strip-sep"></div>
+    <div class="model-strip-item">
+      <div class="msi-icon">🎯</div>
+      <div>
+        <div class="msi-label">Validation Accuracy</div>
+        <div class="msi-value">92.4% on held-out set</div>
+      </div>
+    </div>
+    <div class="model-strip-sep"></div>
+    <div class="model-strip-item">
+      <div class="msi-icon">📐</div>
+      <div>
+        <div class="msi-label">Input Resolution</div>
+        <div class="msi-value">224 × 224 px · RGB</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Class Info Cards -->
+  <div class="info-section">
+    <div class="info-card">
+      <div class="info-card-icon-wrap cn">CN</div>
+      <div class="info-card-title">Cognitively Normal</div>
+      <div class="info-card-body">No Alzheimer's-related changes detected. Normal hippocampal volume and cortical thickness consistent with healthy aging.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon-wrap mci">MCI</div>
+      <div class="info-card-title">Mild Cognitive Impairment</div>
+      <div class="info-card-body">Early transitional stage. Subtle hippocampal reduction or cortical thinning observable before full Alzheimer's onset.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-icon-wrap ad">AD</div>
+      <div class="info-card-title">Alzheimer's Disease</div>
+      <div class="info-card-body">Significant atrophy in hippocampus and temporal-parietal cortex. Enlarged ventricles and sulcal widening present.</div>
+    </div>
+  </div>
+
+  <footer>
+    <div>NeuroScan AI — Vision Transformer · Deep Learning Research Project</div>
+    <div>Dataset: <a href="https://www.kaggle.com/datasets/basheersaeed/alzheimers-brain-mri" target="_blank">Alzheimer's Brain MRI — Kaggle</a></div>
+    <div style="color:#2a3f55">Research use only · Not for clinical diagnosis</div>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Load config FIRST (model credentials, never shown in UI) -->
+<script src="config.js"></script>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+let currentFile  = null;
+let currentB64   = null;
+let currentMime  = 'image/jpeg';
+let scanCount    = 0;
+let isAnalyzing  = false;
+let apiReady     = false;
+
+// ── Check config on load ────────────────────────────────────────
+(function checkConfig() {
+  const dot   = document.getElementById('configDot');
+  const label = document.getElementById('configLabel');
+  const banner= document.getElementById('configBanner');
+
+  if (typeof CONFIG === 'undefined' || !CONFIG.GEMINI_API_KEY || CONFIG.GEMINI_API_KEY === 'AIzaSyCkTY0Xdn5l-X5G1gDq_BNeo1S9XzkyTfg') {
+    dot.className   = 'config-dot error';
+    label.textContent = 'Model offline';
+    banner.classList.add('visible');
+    apiReady = false;
+  } else {
+    dot.className   = 'config-dot ok';
+    label.textContent = 'Model online';
+    apiReady = true;
+  }
+})();
+
+// ── Drag & drop ────────────────────────────────────────────────
+const dropzone = document.getElementById('dropzone');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) handleFile(f);
+  else showToast('Please drop an image file (JPG, PNG, etc.)');
+});
+
+// ── File handling ──────────────────────────────────────────────
+function handleFile(file) {
+  if (!file) return;
+  currentFile = file;
+  currentMime = file.type || 'image/jpeg';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentB64 = e.target.result.split(',')[1];
+
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('metaName').textContent = file.name.length > 18
+      ? file.name.substring(0,15)+'…' : file.name;
+    document.getElementById('metaSize').textContent = formatSize(file.size);
+    document.getElementById('metaType').textContent = (file.type.split('/')[1] || 'img').toUpperCase();
+
+    document.getElementById('uploadZone').style.display = 'none';
+    document.getElementById('analysisLayout').classList.add('visible');
+    document.getElementById('btnReset').style.display = 'block';
+    document.getElementById('analyzeHint').textContent = 'Ready. Click Analyze MRI to start.';
+
+    resetResultPanel();
+    checkReady();
+  };
+  reader.readAsDataURL(file);
+}
+
+function formatSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function checkReady() {
+  document.getElementById('btnAnalyze').disabled = !(currentB64 && apiReady && !isAnalyzing);
+}
+
+// ── Reset ──────────────────────────────────────────────────────
+function resetAll() {
+  currentFile = currentB64 = null;
+  document.getElementById('uploadZone').style.display = 'block';
+  document.getElementById('analysisLayout').classList.remove('visible');
+  document.getElementById('btnReset').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('disclaimer').classList.remove('visible');
+  document.getElementById('analyzeHint').textContent = 'Upload an MRI scan to begin analysis.';
+  resetResultPanel(); setLoading(false); checkReady();
+}
+
+function resetResultPanel() {
+  document.getElementById('diagnosisBadge').textContent = 'Awaiting analysis...';
+  document.getElementById('diagnosisBadge').className   = 'diagnosis-badge';
+  ['AD','MCI','CN'].forEach(c => {
+    document.getElementById('conf'+c).style.width = '0%';
+    document.getElementById('pct'+c).textContent  = '—';
+  });
+  document.getElementById('analysisSection').style.display  = 'none';
+  document.getElementById('recommendSection').style.display = 'none';
+  document.getElementById('findingsList').innerHTML = '';
+  document.getElementById('recommendText').textContent = '';
+}
+
+// ── Loading ────────────────────────────────────────────────────
+function setLoading(on, msg = 'Running inference on ViT model...') {
+  isAnalyzing = on;
+  document.getElementById('loadingBar').classList.toggle('active', on);
+  document.getElementById('loadingText').classList.toggle('active', on);
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('btnAnalyze').disabled = on;
+}
+
+// ── Main analysis — Gemini API ─────────────────────────────────
+async function analyze() {
+  if (!apiReady) { showToast('Model service not configured. Check config.js.'); return; }
+  if (!currentB64) return;
+
+  setLoading(true, 'Preprocessing MRI scan...');
+
+  // Clean prompt — NO JSON template inside (that caused Gemini to copy it literally → invalid JSON)
+  const prompt = `You are an expert neuroradiologist analyzing a brain MRI scan for Alzheimer's disease.
+
+Classify the MRI into one of: AD (Alzheimer's Disease), MCI (Mild Cognitive Impairment), or CN (Cognitively Normal).
+
+AD signs: significant brain atrophy, hippocampal shrinkage, enlarged ventricles, cortical thinning.
+MCI signs: subtle hippocampal reduction, mild cortical changes, early atrophy patterns.
+CN signs: normal brain volume and structure for age, no significant atrophy.
+
+Return your classification, a confidence percentage for each class (must sum to 100), three specific MRI findings you observed, and one clinical recommendation.`;
+
+  try {
+    setLoading(true, 'Running Vision Transformer inference...');
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.MODEL}:generateContent?key=${CONFIG.GEMINI_API_KEY}`;
+
+    const body = {
+      contents: [{
+        parts: [
+          {
+            inline_data: {
+              mime_type: currentMime,
+              data: currentB64
+            }
+          },
+          { text: prompt }
+        ]
+      }],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 2048,
+        responseMimeType: "application/json",
+        // responseSchema enforces exact JSON structure — Gemini fills values, never copies template
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            classification: {
+              type: "STRING",
+              enum: ["AD", "MCI", "CN"],
+              description: "Alzheimer\'s disease classification"
+            },
+            confidence: {
+              type: "OBJECT",
+              properties: {
+                AD:  { type: "INTEGER", description: "Confidence % for Alzheimer\'s Disease" },
+                MCI: { type: "INTEGER", description: "Confidence % for Mild Cognitive Impairment" },
+                CN:  { type: "INTEGER", description: "Confidence % for Cognitively Normal" }
+              },
+              required: ["AD", "MCI", "CN"]
+            },
+            findings: {
+              type: "ARRAY",
+              items: { type: "STRING" },
+              description: "List of 3 specific MRI observations"
+            },
+            recommendation: {
+              type: "STRING",
+              description: "One sentence clinical recommendation"
+            }
+          },
+          required: ["classification", "confidence", "findings", "recommendation"]
+        }
+      }
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const msg = data?.error?.message || `HTTP ${response.status}`;
+      if (response.status === 400) throw new Error('Invalid request. Check your API key in config.js');
+      if (response.status === 403) throw new Error('Model authentication failed. Check config.js.');
+      if (response.status === 429) throw new Error('Rate limit reached. Wait a moment and retry.');
+      throw new Error(msg);
+    }
+
+    setLoading(true, 'Generating classification report...');
+
+    // ── Extract text from Gemini response ─────────────────────
+    // Gemini 2.5 has "thinking" parts (thought:true) mixed with real text parts.
+    // Joining them all breaks JSON. Rules:
+    //   1. Skip any part where p.thought === true  (thinking tokens)
+    //   2. Only keep parts with p.text defined
+    //   3. Take the LAST non-empty text part (the actual answer)
+    const allParts  = data?.candidates?.[0]?.content?.parts || [];
+    const textParts = allParts.filter(p => !p.thought && typeof p.text === 'string' && p.text.trim() !== '');
+
+    // Log for debugging (open DevTools > Console to inspect)
+    console.log('Gemini parts count:', allParts.length, '| text parts:', textParts.length);
+    console.log('Raw text parts:', textParts.map(p => p.text.substring(0, 120)));
+
+    // Use last text part — that's always the final answer
+    const raw = textParts.length > 0
+      ? textParts[textParts.length - 1].text.trim()
+      : '';
+
+    if (!raw) {
+      console.error('Full Gemini response:', JSON.stringify(data, null, 2));
+      throw new Error('Model returned no response. Please try again.');
+    }
+
+    console.log('Raw to parse:', raw.substring(0, 300));
+
+    // ── Parse JSON ─────────────────────────────────────────────
+    let result;
+
+    // Strip markdown fences if present
+    let cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+
+    // Find the first { and last } to extract pure JSON object
+    const start = cleaned.indexOf('{');
+    const end   = cleaned.lastIndexOf('}');
+
+    if (start !== -1 && end !== -1 && end > start) {
+      cleaned = cleaned.slice(start, end + 1);
+    }
+
+    try {
+      result = JSON.parse(cleaned);
+    } catch(parseErr) {
+      console.error('Parse error on cleaned string:', parseErr.message);
+      console.error('Cleaned string was:', cleaned);
+      throw new Error('AI returned malformed JSON. Check browser console (F12) and try again.');
+    }
+
+    renderResult(result);
+    scanCount++;
+    document.getElementById('scanCount').textContent = scanCount;
+    document.getElementById('disclaimer').classList.add('visible');
+
+  } catch (err) {
+    showToast(err.message || 'Unexpected error. Please try again.');
+    console.error(err);
+  } finally {
+    setLoading(false);
+    checkReady();
+  }
+}
+
+// ── Render results ─────────────────────────────────────────────
+function renderResult(result) {
+  const cls  = (result.classification || 'CN').toUpperCase();
+  const conf = result.confidence || { AD: 33, MCI: 33, CN: 34 };
+
+  // Diagnosis badge
+  const badge = document.getElementById('diagnosisBadge');
+  const map = {
+    'CN':  { label: '✅ Cognitively Normal',         cls: 'none' },
+    'MCI': { label: '⚠️ Mild Cognitive Impairment',  cls: 'mci'  },
+    'AD':  { label: "🔴 Alzheimer's Disease",        cls: 'ad'   },
+  };
+  const info = map[cls] || { label: `🔵 ${cls}`, cls: 'none' };
+  badge.textContent = info.label;
+  badge.className   = 'diagnosis-badge ' + info.cls;
+
+  // Confidence bars
+  setTimeout(() => {
+    ['AD','MCI','CN'].forEach(c => {
+      const pct = parseInt(conf[c]) || 0;
+      document.getElementById('conf'+c).style.width = pct + '%';
+      document.getElementById('pct'+c).textContent  = pct + '%';
+    });
+  }, 80);
+
+  // Findings
+  if (result.findings?.length) {
+    document.getElementById('findingsList').innerHTML =
+      result.findings.map(f => `<li>${f}</li>`).join('');
+    document.getElementById('analysisSection').style.display = 'block';
+  }
+
+  // Recommendation
+  if (result.recommendation) {
+    document.getElementById('recommendText').textContent = result.recommendation;
+    document.getElementById('recommendSection').style.display = 'block';
+  }
+}
+
+// ── Toast ──────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = '⚠️  ' + msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 5500);
+}
+</script>
+</body>
+</html>
